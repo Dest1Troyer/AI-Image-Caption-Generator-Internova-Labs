@@ -12,468 +12,265 @@ from model_helper import (
     LANGUAGES
 )
 
-# Set page configuration
+# Set page configuration with a modern look
 st.set_page_config(
     page_title="AI Image Caption Generator",
     page_icon="📸",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# Inject Custom CSS for premium styling
+# Apply minimal, safe custom CSS to enhance typography and elements without breaking layouts
 st.markdown("""
 <style>
-    /* Main container and font styling */
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
     
-    html, body, [data-testid="stAppViewContainer"] {
-        background-color: #0b0f17;
-        font-family: 'Outfit', sans-serif;
-        color: #e2e8f0;
+    /* Apply clean font to headers */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Outfit', sans-serif !important;
+        font-weight: 600 !important;
     }
     
-    /* Sidebar customization */
-    [data-testid="stSidebar"] {
-        background-color: #0f172a;
-        border-right: 1px solid #1e293b;
-    }
-    
-    /* Header layout */
-    .header-container {
+    /* Clean title styling */
+    .app-title-container {
         text-align: center;
-        padding: 2.5rem 1rem 1.5rem 1rem;
-        background: radial-gradient(circle at top, rgba(124, 58, 237, 0.1) 0%, rgba(11, 15, 23, 0) 70%);
-        border-radius: 20px;
-        margin-bottom: 2rem;
-        border: 1px solid rgba(124, 58, 237, 0.05);
+        padding: 1.5rem 0;
+        margin-bottom: 1.5rem;
     }
     
-    .main-title {
-        font-size: 3rem;
-        font-weight: 700;
-        letter-spacing: -0.02em;
+    .title-gradient {
         background: linear-gradient(135deg, #a78bfa 0%, #6366f1 50%, #3b82f6 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5rem;
-        filter: drop-shadow(0 2px 10px rgba(124, 58, 237, 0.15));
+        font-size: 2.8rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
     }
     
-    .subtitle {
-        font-size: 1.15rem;
+    .subtitle-text {
         color: #94a3b8;
+        font-size: 1.1rem;
         font-weight: 300;
-        max-width: 700px;
-        margin: 0 auto;
-        line-height: 1.6;
+        margin-top: 0.25rem;
+    }
+
+    /* Style code blocks (captions) with a colored left border */
+    .stCodeBlock {
+        border-left: 4px solid #6366f1 !important;
+        border-radius: 6px !important;
+        background-color: rgba(15, 23, 42, 0.4) !important;
     }
     
-    /* Styled container cards */
-    .glass-card {
-        background: rgba(30, 41, 59, 0.45);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.25);
-        transition: transform 0.2s ease, border-color 0.2s ease;
+    /* Style translated code blocks with a blue left border */
+    .translated-block .stCodeBlock {
+        border-left: 4px solid #3b82f6 !important;
     }
-    
-    .glass-card:hover {
-        border-color: rgba(124, 58, 237, 0.3);
-    }
-    
-    /* Status indicators */
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.35rem 0.85rem;
-        border-radius: 9999px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        background-color: rgba(16, 185, 129, 0.1);
-        color: #10b981;
-        border: 1px solid rgba(16, 185, 129, 0.25);
-        gap: 6px;
-    }
-    
-    .status-dot {
-        height: 8px;
-        width: 8px;
-        background-color: #10b981;
-        border-radius: 50%;
-        display: inline-block;
-        box-shadow: 0 0 8px #10b981;
-    }
-    
-    /* Streamlit widgets overrides */
-    div.stButton > button {
-        background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
-        color: #ffffff;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 0.65rem 1.75rem;
-        border-radius: 10px;
-        font-weight: 600;
-        letter-spacing: 0.02em;
-        transition: all 0.25s ease;
-        box-shadow: 0 4px 15px rgba(124, 58, 237, 0.25);
-    }
-    
-    div.stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 22px rgba(124, 58, 237, 0.4);
-        background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-        border-color: rgba(255, 255, 255, 0.2);
-        color: #ffffff;
-    }
-    
-    div.stButton > button:active {
-        transform: translateY(1px);
-    }
-    
-    /* Caption box rendering */
-    .caption-container {
-        background: rgba(15, 23, 42, 0.65);
-        border-left: 4px solid #7c3aed;
-        padding: 1.25rem;
-        border-radius: 0 12px 12px 0;
-        margin: 1.25rem 0;
-        border-top: 1px solid rgba(255, 255, 255, 0.03);
-        border-right: 1px solid rgba(255, 255, 255, 0.03);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-    }
-    
-    .caption-type {
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: #c084fc;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-bottom: 0.35rem;
-    }
-    
-    .caption-content {
-        font-size: 1.2rem;
-        color: #f8fafc;
-        font-weight: 400;
-        line-height: 1.6;
-    }
-    
-    /* Section dividers */
-    .glow-divider {
-        height: 1px;
-        background: linear-gradient(90deg, rgba(124, 58, 237, 0) 0%, rgba(124, 58, 237, 0.3) 50%, rgba(124, 58, 237, 0) 100%);
-        margin: 2rem 0;
-    }
-    
-    /* Tab formatting */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 12px;
-        background-color: rgba(15, 23, 42, 0.4);
-        padding: 8px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        padding: 8px 16px;
-        border-radius: 8px;
-        font-weight: 500;
-        color: #94a3b8;
-        transition: all 0.2s ease;
-    }
-    
-    .stTabs [data-baseweb="tab"]:hover {
-        color: #f1f5f9;
-        background-color: rgba(255, 255, 255, 0.03);
-    }
-    
-    .stTabs [aria-selected="true"] {
-        background-color: rgba(124, 58, 237, 0.15) !important;
-        color: #a78bfa !important;
-        border-bottom: 2px solid #7c3aed !important;
-    }
-    
-    /* Batch grid item */
-    .batch-item {
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
+
+    /* Sidebar info cards */
+    .sidebar-card {
         padding: 1rem;
-        background: rgba(15, 23, 42, 0.3);
+        border-radius: 10px;
+        background-color: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
         margin-bottom: 1rem;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Helper function to generate custom copy button html
-def custom_copy_button(text_id, text_to_copy):
-    escaped_text = text_to_copy.replace("'", "\\'").replace('"', '\\"').replace('\n', ' ')
-    html_code = f"""
-    <div style="text-align: right; margin-top: -5px;">
-        <button id="copy-btn-{text_id}" style="
-            background: rgba(124, 58, 237, 0.15);
-            border: 1px solid rgba(124, 58, 237, 0.3);
-            color: #d8b4fe;
-            padding: 5px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 0.8rem;
-            transition: all 0.2s ease;
-            font-family: inherit;
-        " onclick="
-            const textarea = document.createElement('textarea');
-            textarea.value = '{escaped_text}';
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            
-            const btn = document.getElementById('copy-btn-{text_id}');
-            btn.innerHTML = '✓ Copied!';
-            btn.style.background = 'rgba(16, 185, 129, 0.2)';
-            btn.style.color = '#34d399';
-            btn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-            
-            setTimeout(() => {{
-                btn.innerHTML = 'Copy Caption';
-                btn.style.background = 'rgba(124, 58, 237, 0.15)';
-                btn.style.color = '#d8b4fe';
-                btn.style.borderColor = 'rgba(124, 58, 237, 0.3)';
-            }}, 2000);
-        ">Copy Caption</button>
-    </div>
-    """
-    return html_code
-
-# Header
+# Centered Title and Subtitle
 st.markdown("""
-<div class="header-container">
-    <div class="main-title">📸 AI Image Caption Generator</div>
-    <div class="subtitle">Upload your images and automatically generate beautiful, descriptive captions with multiple style variations and multilingual support using HuggingFace BLIP.</div>
+<div class="app-title-container">
+    <span class="title-gradient">📸 AI Image Caption Generator</span>
+    <p class="subtitle-text">Transform images into highly descriptive captions with style variations and translation.</p>
 </div>
 """, unsafe_allow_html=True)
 
-# Sidebar
+# Sidebar configurations
 with st.sidebar:
-    st.markdown("### ⚙️ Settings & Info")
+    st.markdown("### ⚙️ Settings & Status")
     
     # Model Loading Status Info
     status_placeholder = st.empty()
-    status_placeholder.markdown("""
-    <div class="status-badge" style="background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.25);">
-        <span class="status-dot" style="background-color: #f59e0b; box-shadow: 0 0 8px #f59e0b;"></span>
-        Model Loading...
-    </div>
-    """, unsafe_allow_html=True)
+    status_placeholder.info("⏳ Loading model weights...")
     
     try:
         processor, model, device = load_blip_model()
-        status_placeholder.markdown(f"""
-        <div class="status-badge">
-            <span class="status-dot"></span>
-            Model Ready ({device.upper()})
-        </div>
-        """, unsafe_allow_html=True)
+        status_placeholder.success(f"🟢 Model Ready ({device.upper()})")
     except Exception as e:
-        status_placeholder.markdown(f"""
-        <div class="status-badge" style="background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.25);">
-            <span class="status-dot" style="background-color: #ef4444; box-shadow: 0 0 8px #ef4444;"></span>
-            Load Error
-        </div>
-        """, unsafe_allow_html=True)
-        st.error(f"Failed to load model: {str(e)}")
+        status_placeholder.error("🔴 Model Load Error")
+        st.error(f"Error details: {str(e)}")
 
     st.markdown("---")
-    st.markdown("### 🌐 Translation Settings")
+    
+    # Language Selector
+    st.markdown("#### 🌐 Translation Settings")
     target_lang = st.selectbox(
-        "Select Target Language for translation:",
+        "Translate captions to:",
         options=list(LANGUAGES.keys()),
         index=1  # Default to Spanish
     )
     
     st.markdown("---")
-    st.markdown("### 🤖 About the Model")
-    st.markdown("""
-    This app runs the **Salesforce/blip-image-captioning-base** model locally. It uses a ViT (Vision Transformer) backbone and a BERT-like language model to generate highly accurate descriptions of images.
     
-    **Features:**
-    - Fast local inference.
-    - Zero cloud API dependency.
-    - Automatic device optimization (uses CUDA if available).
-    """)
+    # Model details
+    st.markdown("""
+    <div class="sidebar-card">
+        <h5 style="margin-top:0;">🤖 Model Details</h5>
+        <p style="font-size:0.85rem; color:#94a3b8; line-height:1.4; margin-bottom:0;">
+            Running <strong>Salesforce/blip-image-captioning-base</strong> locally. 
+            No cloud APIs or subscription keys are required.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-# Create Tabs
-tab1, tab2 = st.tabs(["🖼️ Single Image Captioning", "📁 Batch Image Processing"])
+# Tabs definition
+tab1, tab2 = st.tabs(["🖼️ Single Image Captioner", "📁 Batch Processor"])
 
 # Tab 1: Single Image Captioning
 with tab1:
-    col1, col2 = st.columns([1, 1], gap="large")
+    col_left, col_right = st.columns([1, 1], gap="medium")
     
-    with col1:
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("📤 Upload Image")
-        uploaded_file = st.file_uploader(
-            "Drag and drop your image here or browse",
+    with col_left:
+        with st.container(border=True):
+            st.markdown("### 📤 Upload Image")
+            uploaded_file = st.file_uploader(
+                "Upload a PNG, JPG, JPEG, or WEBP image:",
+                type=["png", "jpg", "jpeg", "webp"],
+                key="single_uploader"
+            )
+            
+            # Simple, clean divider
+            st.markdown("<p style='text-align: center; color: #475569; margin: 10px 0;'>- OR -</p>", unsafe_allow_html=True)
+            use_sample = st.checkbox("🎯 Use sample demonstration image", value=False)
+            
+            image = None
+            if uploaded_file is not None:
+                image = Image.open(uploaded_file)
+            elif use_sample:
+                sample_path = "samples/sample_1.jpg"
+                if os.path.exists(sample_path):
+                    image = Image.open(sample_path)
+                else:
+                    st.error("Sample image not found. Please upload an image.")
+                    
+            if image is not None:
+                st.image(image, use_container_width=True, caption="Source Image")
+
+    with col_right:
+        with st.container(border=True):
+            st.markdown("### 📝 Generated Descriptions")
+            
+            if image is not None:
+                with st.spinner("Analyzing image and generating captions..."):
+                    start_time = time.time()
+                    base_caption = generate_base_caption(image)
+                    inference_time = time.time() - start_time
+                    
+                    st.markdown(f"<p style='color: #64748b; font-size: 0.85rem;'>Inference completed in {inference_time:.2f} seconds.</p>", unsafe_allow_html=True)
+                    
+                    # Get the style variations
+                    styles = get_style_variations(base_caption)
+                    
+                    # Render styling variations in nice containers
+                    for style_name, caption_val in styles.items():
+                        st.markdown(f"#### ✨ {style_name}")
+                        st.code(caption_val, language="text")
+                        
+                        # Add translation if selected language is not English
+                        if target_lang != "English":
+                            translated_val = translate_caption(caption_val, target_lang)
+                            st.markdown(f"<div class='translated-block' style='margin-left: 20px; margin-top: -10px; margin-bottom: 15px;'><p style='font-size:0.85rem; color:#3b82f6; margin-bottom:2px;'>🌐 {target_lang} Translation:</p>", unsafe_allow_html=True)
+                            st.code(translated_val, language="text")
+                            st.markdown("</div>", unsafe_allow_html=True)
+            else:
+                st.info("Please upload an image or enable the sample demonstration on the left to generate descriptions.")
+
+# Tab 2: Batch Processing
+with tab2:
+    with st.container(border=True):
+        st.markdown("### 📁 Batch Uploader")
+        batch_files = st.file_uploader(
+            "Select multiple images to process:",
             type=["png", "jpg", "jpeg", "webp"],
-            key="single_uploader"
+            accept_multiple_files=True,
+            key="batch_uploader"
         )
         
-        # Test Sample option
-        st.markdown("<p style='text-align: center; color: #94a3b8; margin: 10px 0;'>- OR -</p>", unsafe_allow_html=True)
-        use_sample = st.checkbox("🎯 Use sample image")
-        
-        image = None
-        if uploaded_file is not None:
-            image = Image.open(uploaded_file)
-        elif use_sample:
-            sample_path = "samples/sample_1.jpg"
-            if os.path.exists(sample_path):
-                image = Image.open(sample_path)
-            else:
-                st.info("Sample image 'samples/sample_1.jpg' not found. Please upload an image.")
-                # We show info if sample doesn't exist yet, but we will make sure it is generated.
-                
-        if image is not None:
-            st.image(image, use_column_width=True, caption="Uploaded Image")
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-    with col2:
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("📝 Generated Captions")
-        
-        if image is not None:
-            with st.spinner("Analyzing image and generating captions..."):
-                start_time = time.time()
-                base_caption = generate_base_caption(image)
-                inference_time = time.time() - start_time
-                
-                # Get styling variations
-                styles = get_style_variations(base_caption)
-                
-                st.markdown(f"<p style='color: #64748b; font-size: 0.85rem;'>Inference took {inference_time:.2f} seconds</p>", unsafe_allow_html=True)
-                
-                # Render styles in interactive expanders
-                for idx, (style_name, style_val) in enumerate(styles.items()):
-                    with st.expander(f"✨ {style_name}", expanded=(idx == 0)):
-                        # Style text container
-                        st.markdown(f"""
-                        <div class="caption-container">
-                            <div class="caption-type">{style_name}</div>
-                            <div class="caption-content">{style_val}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Copy button
-                        st.components.v1.html(custom_copy_button(f"style_{idx}", style_val), height=35)
-                        
-                        # Translation section
-                        if target_lang != "English":
-                            with st.spinner("Translating..."):
-                                translated_val = translate_caption(style_val, target_lang)
-                                st.markdown(f"""
-                                <div class="caption-container" style="border-left-color: #3b82f6; background: rgba(59, 130, 246, 0.05);">
-                                    <div class="caption-type">{target_lang} Translation</div>
-                                    <div class="caption-content" style="font-style: italic;">{translated_val}</div>
-                                </div>
-                                """, unsafe_allow_html=True)
-                                # Copy translated button
-                                st.components.v1.html(custom_copy_button(f"trans_{idx}", translated_val), height=35)
-        else:
-            st.info("Upload an image on the left to generate descriptions.")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-# Tab 2: Batch Image Processing
-with tab2:
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.subheader("📁 Batch Upload")
-    batch_files = st.file_uploader(
-        "Upload multiple images to process them in batch",
-        type=["png", "jpg", "jpeg", "webp"],
-        accept_multiple_files=True,
-        key="batch_uploader"
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
-    
     if batch_files:
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("⚡ Processing Gallery")
-        
-        # UI controls
-        col_ctrl1, col_ctrl2 = st.columns([1, 1])
-        with col_ctrl1:
-            batch_style = st.selectbox(
-                "Export Style Variation:",
-                options=["Descriptive (Default)", "Professional/SEO", "Humorous", "Creative Story", "Alt-Text (Accessibility)"],
-                key="batch_style_select"
-            )
-        with col_ctrl2:
-            include_trans = st.checkbox("Include translation in export", value=True)
+        with st.container(border=True):
+            st.markdown("### ⚙️ Batch Options")
+            col_opt1, col_opt2 = st.columns(2)
+            with col_opt1:
+                batch_style = st.selectbox(
+                    "Primary Style for Export:",
+                    options=["Descriptive (Default)", "Professional/SEO", "Humorous", "Creative Story", "Alt-Text (Accessibility)"]
+                )
+            with col_opt2:
+                include_trans = st.checkbox("Include translation in output file", value=True)
+                
+            run_batch = st.button("🚀 Process Batch Images")
             
-        # Run button
-        if st.button("🚀 Process All Images"):
+        if run_batch:
             results = []
             progress_bar = st.progress(0)
             status_text = st.empty()
             
-            # Create columns or list layout for images
-            gallery_placeholder = st.container()
+            gallery_container = st.container()
             
             for index, file in enumerate(batch_files):
                 status_text.text(f"Processing image {index + 1} of {len(batch_files)}: {file.name}")
                 
-                # Load Image
+                # Load image
                 img = Image.open(file)
                 
-                # Generate
+                # Generate base caption
                 base = generate_base_caption(img)
                 all_styles = get_style_variations(base)
                 selected_val = all_styles.get(batch_style, base)
                 
-                # Translate if required
+                # Translate if requested
                 trans_val = ""
                 if include_trans and target_lang != "English":
                     trans_val = translate_caption(selected_val, target_lang)
                 
-                # Store
+                # Append to list
                 results.append({
                     "Filename": file.name,
                     "Default Caption": base,
-                    "Selected Style Caption": selected_val,
+                    f"Selected Style ({batch_style})": selected_val,
                     f"Translation ({target_lang})": trans_val if trans_val else "N/A"
                 })
                 
-                # Render in Gallery placeholder dynamically
-                with gallery_placeholder:
-                    col_img, col_caps = st.columns([1, 3])
-                    with col_img:
-                        st.image(img, use_column_width=True)
-                    with col_caps:
-                        st.markdown(f"#### 📄 {file.name}")
-                        st.markdown(f"**Default:** {base}")
-                        st.markdown(f"**Selected Style ({batch_style}):** {selected_val}")
-                        if trans_val:
-                            st.markdown(f"**Translation ({target_lang}):** *{trans_val}*")
-                        st.markdown("<hr style='margin:10px 0; border:0; border-top:1px solid rgba(255,255,255,0.05);'>", unsafe_allow_html=True)
+                # Display dynamically in a clean row layout
+                with gallery_container:
+                    with st.container(border=True):
+                        col_img, col_desc = st.columns([1, 3])
+                        with col_img:
+                            st.image(img, use_container_width=True)
+                        with col_desc:
+                            st.markdown(f"##### 📄 {file.name}")
+                            st.markdown(f"**Default:** {base}")
+                            st.markdown(f"**Selected Style ({batch_style}):**")
+                            st.code(selected_val, language="text")
+                            if trans_val:
+                                st.markdown(f"**{target_lang} Translation:**")
+                                st.code(trans_val, language="text")
                 
                 # Update progress
                 progress_bar.progress((index + 1) / len(batch_files))
+                
+            status_text.success(f"Processed {len(batch_files)} images successfully!")
             
-            status_text.success(f"Successfully processed {len(batch_files)} images!")
-            
-            # Create export DataFrame
+            # Export data
             df = pd.DataFrame(results)
             
-            # Export CSV button
+            # CSV Download
             csv_buffer = io.StringIO()
             df.to_csv(csv_buffer, index=False)
             csv_data = csv_buffer.getvalue()
             
-            st.markdown("### 📥 Download Results")
+            st.markdown("### 📥 Export Compiled Results")
             st.download_button(
-                label="📥 Download Captions CSV",
+                label="📥 Download CSV File",
                 data=csv_data,
                 file_name="batch_captions.csv",
                 mime="text/csv"
@@ -481,4 +278,4 @@ with tab2:
             
             st.dataframe(df, use_container_width=True)
     else:
-        st.info("Upload multiple files to start batch processing.")
+        st.info("Upload multiple images in the section above to start batch processing.")
