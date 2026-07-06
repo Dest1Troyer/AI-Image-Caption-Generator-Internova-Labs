@@ -329,11 +329,11 @@ with tab1:
         if uploaded_file is not None:
             image = Image.open(uploaded_file)
         elif use_sample:
-            sample_path = "sample.jpg"
+            sample_path = "samples/sample_1.jpg"
             if os.path.exists(sample_path):
                 image = Image.open(sample_path)
             else:
-                st.info("Generating a sample image for testing... Please wait.")
+                st.info("Sample image 'samples/sample_1.jpg' not found. Please upload an image.")
                 # We show info if sample doesn't exist yet, but we will make sure it is generated.
                 
         if image is not None:
