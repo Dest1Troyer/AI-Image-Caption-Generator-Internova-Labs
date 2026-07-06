@@ -1,0 +1,26 @@
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/
+! .streamlit/config.toml
+
+# Batch exports / local test results
+*.csv
+batch_captions.csv
+
+# HuggingFace downloads
+.cache/
